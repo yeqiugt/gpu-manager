@@ -7,6 +7,16 @@ import (
 )
 
 func GetAnnotation(containerId int, deviceIds []string) map[string]string {
+	ret := nvml2.Init()
+	if ret != nvml2.SUCCESS {
+		fmt.Println("nvlib init err")
+	}
+	defer func() {
+		ret := nvml2.Shutdown()
+		if ret != nvml2.SUCCESS {
+			fmt.Println("Error shutting down NVML: %v", ret)
+		}
+	}()
 	var (
 		gpuIdx    string
 		gpuPcieId string

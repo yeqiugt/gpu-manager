@@ -87,6 +87,17 @@ func GetInUseDevice() map[int]bool {
 }
 
 func IsMig(index int) bool {
+	ret := nvml2.Init()
+	if ret != nvml2.SUCCESS {
+		fmt.Println("nvlib init err")
+	}
+	defer func() {
+		ret := nvml2.Shutdown()
+		if ret != nvml2.SUCCESS {
+			fmt.Println("Error shutting down NVML: %v", ret)
+		}
+	}()
+
 	handle, ret := nvml2.DeviceGetHandleByIndex(index)
 	if ret != nvml2.SUCCESS {
 		fmt.Println("DeviceGetHandleByIndex err, index: ", index)
@@ -96,6 +107,16 @@ func IsMig(index int) bool {
 }
 
 func GetNvidiaDevice(client kubernetes.Interface, hostname string) ([]string, error) {
+	ret := nvml2.Init()
+	if ret != nvml2.SUCCESS {
+		fmt.Println("nvlib init err")
+	}
+	defer func() {
+		ret := nvml2.Shutdown()
+		if ret != nvml2.SUCCESS {
+			fmt.Println("Error shutting down NVML: %v", ret)
+		}
+	}()
 	allPods, err := getPodsOnNode(client, hostname, string(v1.PodRunning))
 	if err != nil {
 		return nil, err
