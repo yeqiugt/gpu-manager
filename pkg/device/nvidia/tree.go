@@ -26,10 +26,9 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/klog"
 	"tkestack.io/gpu-manager/pkg/config"
 	"tkestack.io/gpu-manager/pkg/device"
-
-	"k8s.io/klog"
 	"tkestack.io/nvml"
 )
 
@@ -44,10 +43,10 @@ const (
 	HundredCore = 100
 )
 
-//LevelMap is a map stores NvidiaNode on each level.
+// LevelMap is a map stores NvidiaNode on each level.
 type LevelMap map[nvml.GpuTopologyLevel][]*NvidiaNode
 
-//NvidiaTree represents a Nvidia GPU in a tree.
+// NvidiaTree represents a Nvidia GPU in a tree.
 type NvidiaTree struct {
 	sync.Mutex
 
@@ -64,7 +63,7 @@ func init() {
 	device.Register("nvidia", NewNvidiaTree)
 }
 
-//NewNvidiaTree returns a new NvidiaTree.
+// NewNvidiaTree returns a new NvidiaTree.
 func NewNvidiaTree(cfg *config.Config) device.GPUTree {
 	tree := newNvidiaTree(cfg)
 
@@ -84,9 +83,9 @@ func newNvidiaTree(cfg *config.Config) *NvidiaTree {
 	return tree
 }
 
-//Init a NvidiaTree.
-//Will try to use nvml first, fallback to input string if
-//parseFromLibrary() failed.
+// Init a NvidiaTree.
+// Will try to use nvml first, fallback to input string if
+// parseFromLibrary() failed.
 func (t *NvidiaTree) Init(input string) {
 	err := t.parseFromLibrary()
 	if err == nil {
@@ -103,8 +102,8 @@ func (t *NvidiaTree) Init(input string) {
 	}
 }
 
-//Update NvidiaTree by info getting from GPU devices.
-//Return immediately if real GPU device is not available.
+// Update NvidiaTree by info getting from GPU devices.
+// Return immediately if real GPU device is not available.
 func (t *NvidiaTree) Update() {
 	if !t.realMode {
 		return
@@ -129,6 +128,19 @@ func (t *NvidiaTree) Update() {
 
 			if !node.pendingReset {
 				t.freeNode(node)
+			}
+		}
+		// 如果开启了mig，标志为已占用
+		if IsMig(i) {
+			fmt.Println("gpu enabel mig : ", i)
+			t.MarkOccupied(node, HundredCore, HundredCore)
+		} else {
+			// 如果已被nvidia,mig占用，则标志为已占用
+			for dev, _ := range GetInUseDevice() {
+				if node.Meta.ID == dev {
+					fmt.Println("gpu be used by nvidia : ", i)
+					t.MarkOccupied(node, HundredCore, HundredCore)
+				}
 			}
 		}
 
@@ -401,7 +413,7 @@ func (t *NvidiaTree) join(nodes LevelMap, ntype nvml.GpuTopologyLevel, indexA, i
 	return newNode
 }
 
-//Available returns number of available leaves of this tree.
+// Available returns number of available leaves of this tree.
 func (t *NvidiaTree) Available() int {
 	t.Lock()
 	defer t.Unlock()
@@ -409,10 +421,10 @@ func (t *NvidiaTree) Available() int {
 	return t.root.Available()
 }
 
-//MarkFree updates a NvidiaNode by freeing request cores and memory.
-//If request cores < HundredCore, plus available cores and memory with request value.
-//If request cores >= HundredCore, set available cores and memory to total,
-//and update mask of all parents of this node.
+// MarkFree updates a NvidiaNode by freeing request cores and memory.
+// If request cores < HundredCore, plus available cores and memory with request value.
+// If request cores >= HundredCore, set available cores and memory to total,
+// and update mask of all parents of this node.
 func (t *NvidiaTree) MarkFree(node *NvidiaNode, util int64, memory int64) {
 	t.Lock()
 	defer t.Unlock()
@@ -470,10 +482,10 @@ func (t *NvidiaTree) freeNode(n *NvidiaNode) {
 	}
 }
 
-//MarkOccupied updates a NvidiaNode by adding request cores and memory.
-//Mask of all parents of this node will be updated.
-//If request cores < HundredCore, minus available cores and memory with request value.
-//If request cores >= HundredCore, set available cores and memory to 0,
+// MarkOccupied updates a NvidiaNode by adding request cores and memory.
+// Mask of all parents of this node will be updated.
+// If request cores < HundredCore, minus available cores and memory with request value.
+// If request cores >= HundredCore, set available cores and memory to 0,
 func (t *NvidiaTree) MarkOccupied(node *NvidiaNode, util int64, memory int64) {
 	t.Lock()
 	defer t.Unlock()
@@ -517,22 +529,22 @@ func (t *NvidiaTree) occupyNode(n *NvidiaNode) {
 	}
 }
 
-//Leaves returns leaves of tree
+// Leaves returns leaves of tree
 func (t *NvidiaTree) Leaves() []*NvidiaNode {
 	return t.leaves
 }
 
-//Total returns count of leaves
+// Total returns count of leaves
 func (t *NvidiaTree) Total() int {
 	return len(t.leaves)
 }
 
-//Root returns root node of tree
+// Root returns root node of tree
 func (t *NvidiaTree) Root() *NvidiaNode {
 	return t.root
 }
 
-//Query tries to find node by name, return nil if not found
+// Query tries to find node by name, return nil if not found
 func (t *NvidiaTree) Query(name string) *NvidiaNode {
 	n, ok := t.query[name]
 	if !ok {
@@ -543,7 +555,7 @@ func (t *NvidiaTree) Query(name string) *NvidiaNode {
 	return n
 }
 
-//PrintGraph returns the details of tree as string
+// PrintGraph returns the details of tree as string
 func (t *NvidiaTree) PrintGraph() string {
 	var (
 		buf bytes.Buffer
