@@ -82,11 +82,13 @@ func GetInUseDevice() map[int]bool {
 		devUsage[index] = true
 	}
 	fmt.Printf("in ues device %v", devUsage)
+
 	return devUsage
 
 }
 
 func IsMig(index int) bool {
+	fmt.Println("determined is mig, gpu index: ", index)
 	ret := nvml2.Init()
 	if ret != nvml2.SUCCESS {
 		fmt.Println("nvlib init err")
@@ -100,9 +102,13 @@ func IsMig(index int) bool {
 
 	handle, ret := nvml2.DeviceGetHandleByIndex(index)
 	if ret != nvml2.SUCCESS {
-		fmt.Println("DeviceGetHandleByIndex err, index: ", index)
+		fmt.Println("DeviceGetHandleByIndex err, index: ", index, ret)
 	}
-	isMig, _ := handle.IsMigDeviceHandle()
+	isMig, ret := handle.IsMigDeviceHandle()
+	if ret != nvml2.SUCCESS {
+		fmt.Println("IsMigDeviceHandle err, index: ", index, ret)
+	}
+	fmt.Println("gpu index", index, " is mig ", isMig)
 	return isMig
 }
 
@@ -127,20 +133,24 @@ func GetNvidiaDevice(client kubernetes.Interface, hostname string) ([]string, er
 
 	devMap := make(map[string]struct{}, 0)
 	for _, pod := range allPods {
-		for i, _ := range pod.Spec.Containers {
-			if idxStr, ok := pod.ObjectMeta.Annotations[fmt.Sprintf("inspur.com/gpu-index-idx-%d", i)]; ok {
+		for i, c := range pod.Spec.Containers {
+			fmt.Println("pod name: ", pod.Name, "container name ", c.Name)
+			annotation := fmt.Sprintf("inspur.com/gpu-index-idx-%d", i)
+			fmt.Println("find ", annotation)
+			if idxStr, ok := pod.ObjectMeta.Annotations[annotation]; ok {
+				fmt.Println("1111111111111111111 found ", idxStr)
 				idxList := strings.Split(idxStr, "-")
 				for _, idx := range idxList {
+					fmt.Println("found gpu idx : ", idx)
 					if _, err := strconv.Atoi(idx); err != nil {
 						return nil, fmt.Errorf("predicate idx %s invalid for pod %s ", idxStr, pod.UID)
 					}
-					devStr := NvidiaDevicePrefix + idxStr
-					if !IsValidGPUPath(devStr) {
-						return nil, fmt.Errorf("predicate idx %s invalid", devStr)
-					}
-					if _, ok := devMap[idxStr]; !ok {
-						devMap[idxStr] = struct{}{}
-					}
+					//devStr := NvidiaDevicePrefix + idxStr
+					//if !IsValidGPUPath(devStr) {
+					//	return nil, fmt.Errorf("predicate idx %s invalid", devStr)
+					//}
+					fmt.Println("gpu index ", idx, " in use")
+					devMap[idx] = struct{}{}
 				}
 			}
 		}
@@ -149,6 +159,7 @@ func GetNvidiaDevice(client kubernetes.Interface, hostname string) ([]string, er
 	for dev, _ := range devMap {
 		devList = append(devList, dev)
 	}
+	fmt.Println("in use devcie List : ", devList)
 	return devList, nil
 }
 func getPodsOnNode(client kubernetes.Interface, hostname string, phase string) ([]v1.Pod, error) {
