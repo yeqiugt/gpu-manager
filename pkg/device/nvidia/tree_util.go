@@ -107,13 +107,15 @@ func IsMig(index int) bool {
 	if ret != nvml2.SUCCESS {
 		fmt.Println("DeviceGetHandleByIndex err, index: ", index, ret)
 	}
-
-	_, _, ret = handle.GetMigMode()
+	currentMode, PendingMode, ret := handle.GetMigMode()
+	fmt.Println("currentMode: ", currentMode, " PendingMode: ", PendingMode)
 	if ret != nvml2.SUCCESS {
+		fmt.Println("DeviceGetHandleByIndex err, index: ", index, ret)
+	}
+	if currentMode == nvml2.DEVICE_MIG_ENABLE {
 		fmt.Println("gpu index", index, " is mig ", true)
 		return true
 	}
-
 	fmt.Println("gpu index", index, " is mig ", false)
 	return false
 }
@@ -176,6 +178,8 @@ func getPodsOnNode(client kubernetes.Interface, hostname string, phase string) (
 	if len(hostname) == 0 {
 		hostname, _ = os.Hostname()
 	}
+	fmt.Println("hostname: ", hostname)
+	fmt.Println("phase: ", phase)
 	var (
 		selector fields.Selector
 		pods     []v1.Pod
@@ -196,7 +200,9 @@ func getPodsOnNode(client kubernetes.Interface, hostname string, phase string) (
 			FieldSelector: selector.String(),
 			LabelSelector: labels.Everything().String(),
 		})
+		fmt.Println("podList", podList)
 		if err != nil {
+			fmt.Println("get pod err: ", err)
 			return false, err
 		}
 		return true, nil
