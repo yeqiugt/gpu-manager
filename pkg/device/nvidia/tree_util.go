@@ -67,6 +67,9 @@ func GetInUseDevice() map[int]bool {
 
 	// 4. 获取vcuda占用的设备
 	k8sclient, hostname, err := GetClientAndHostName()
+	if err != nil {
+		fmt.Println("GetClientAndHostName err", err)
+	}
 	inUsedDev, err := GetNvidiaDevice(k8sclient, hostname)
 	if err != nil {
 		fmt.Println("GetNvidiaDevice err", err)
@@ -104,12 +107,15 @@ func IsMig(index int) bool {
 	if ret != nvml2.SUCCESS {
 		fmt.Println("DeviceGetHandleByIndex err, index: ", index, ret)
 	}
-	isMig, ret := handle.IsMigDeviceHandle()
+
+	_, _, ret = handle.GetMigMode()
 	if ret != nvml2.SUCCESS {
-		fmt.Println("IsMigDeviceHandle err, index: ", index, ret)
+		fmt.Println("gpu index", index, " is mig ", true)
+		return true
 	}
-	fmt.Println("gpu index", index, " is mig ", isMig)
-	return isMig
+
+	fmt.Println("gpu index", index, " is mig ", false)
+	return false
 }
 
 func GetNvidiaDevice(client kubernetes.Interface, hostname string) ([]string, error) {
@@ -124,6 +130,10 @@ func GetNvidiaDevice(client kubernetes.Interface, hostname string) ([]string, er
 		}
 	}()
 	allPods, err := getPodsOnNode(client, hostname, string(v1.PodRunning))
+	fmt.Println("all  pods :")
+	for _, pod := range allPods {
+		fmt.Println(pod.Name)
+	}
 	if err != nil {
 		return nil, err
 	}
