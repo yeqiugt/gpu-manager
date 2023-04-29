@@ -84,7 +84,7 @@ func GetInUseDevice() map[int]bool {
 		}
 		devUsage[index] = true
 	}
-	fmt.Printf("in ues device %v", devUsage)
+	fmt.Printf("in ues device %v \n", devUsage)
 
 	return devUsage
 
@@ -175,9 +175,7 @@ func GetNvidiaDevice(client kubernetes.Interface, hostname string) ([]string, er
 	return devList, nil
 }
 func getPodsOnNode(client kubernetes.Interface, hostname string, phase string) ([]v1.Pod, error) {
-	if len(hostname) == 0 {
-		hostname, _ = os.Hostname()
-	}
+
 	fmt.Println("hostname: ", hostname)
 	fmt.Println("phase: ", phase)
 	var (
@@ -237,6 +235,12 @@ func GetClientAndHostName() (*kubernetes.Clientset, string, error) {
 		return &kubernetes.Clientset{}, "", err
 	}
 	hostname, _ := os.Hostname()
-	return k8sclient, hostname, nil
+	gpuManagerPod, err := k8sclient.CoreV1().Pods("kube-system").Get(hostname, metav1.GetOptions{})
+	if err != nil {
+		fmt.Println("get gpumanager pod err: ", err)
+		return nil, "", err
+	}
+	nodeName := gpuManagerPod.Spec.NodeName
+	return k8sclient, nodeName, nil
 
 }
