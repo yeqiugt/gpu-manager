@@ -131,18 +131,18 @@ func (t *NvidiaTree) Update() {
 			}
 		}
 		// 如果开启了mig，标志为已占用
-		if IsMig(i) {
-			fmt.Println("gpu enabel mig : ", i)
-			t.MarkOccupied(node, HundredCore, HundredCore)
-		} else {
-			// 如果已被nvidia,mig占用，则标志为已占用
-			for dev, _ := range GetInUseDevice() {
-				if node.Meta.ID == dev {
-					fmt.Println("gpu be used by nvidia : ", i)
+		/*		if IsMig(i) {
+					fmt.Println("gpu enabel mig : ", i)
 					t.MarkOccupied(node, HundredCore, HundredCore)
-				}
-			}
-		}
+				} else {
+					// 如果已被nvidia,mig占用，则标志为已占用
+					for dev, _ := range GetInUseDevice() {
+						if node.Meta.ID == dev {
+							fmt.Println("gpu be used by nvidia : ", i)
+							t.MarkOccupied(node, HundredCore, HundredCore)
+						}
+					}
+				}*/
 
 		klog.V(4).Infof("node %d, pid: %+v, memory: %+v, utilization: %+v, pendingReset: %+v",
 			i, node.Meta.Pids, node.Meta.UsedMemory, node.Meta.Utilization, node.pendingReset)

@@ -18,6 +18,7 @@
 package nvidia
 
 import (
+	"fmt"
 	"sort"
 
 	"k8s.io/klog"
@@ -29,13 +30,13 @@ type shareMode struct {
 	tree *nvidia.NvidiaTree
 }
 
-//NewShareMode returns a new shareMode struct.
+// NewShareMode returns a new shareMode struct.
 //
-//Evaluate() of shareMode returns one node with minimum available cores
-//which fullfil the request.
+// Evaluate() of shareMode returns one node with minimum available cores
+// which fullfil the request.
 //
-//Share mode means multiple application may share one GPU node which uses
-//GPU more efficiently.
+// Share mode means multiple application may share one GPU node which uses
+// GPU more efficiently.
 func NewShareMode(t *nvidia.NvidiaTree) *shareMode {
 	return &shareMode{t}
 }
@@ -53,8 +54,18 @@ func (al *shareMode) Evaluate(cores int64, memory int64) []*nvidia.NvidiaNode {
 
 	sorter.Sort(tmpStore)
 
+	inUseDev := nvidia.GetInUseDevice()
 	for _, node := range tmpStore {
 		if node.AllocatableMeta.Cores >= cores && node.AllocatableMeta.Memory >= memory {
+			if nvidia.IsMig(node.Meta.ID) {
+				fmt.Println("gpu enabel mig : ", node.Meta.ID)
+				continue
+			}
+			if _, ok := inUseDev[node.Meta.ID]; ok {
+				fmt.Println("gpu be used by nvidia : ", node.Meta.ID)
+				continue
+			}
+			fmt.Println("gpu not mig ,and not in use: ", node.Meta.ID)
 			klog.V(2).Infof("Pick up %d mask %b, cores: %d, memory: %d", node.Meta.ID, node.Mask, node.AllocatableMeta.Cores, node.AllocatableMeta.Memory)
 			nodes = append(nodes, node)
 			break
