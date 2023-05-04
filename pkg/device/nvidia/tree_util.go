@@ -65,7 +65,7 @@ const (
 
 func GetInUseDevice() map[int]bool {
 
-	// 4. 获取vcuda占用的设备
+	// 4. 获取nvidia占用的设备
 	k8sclient, hostname, err := GetClientAndHostName()
 	if err != nil {
 		fmt.Println("GetClientAndHostName err", err)
@@ -132,10 +132,10 @@ func GetNvidiaDevice(client kubernetes.Interface, hostname string) ([]string, er
 		}
 	}()
 	allPods, err := getPodsOnNode(client, hostname, string(v1.PodRunning))
-	fmt.Println("all  pods :")
-	for _, pod := range allPods {
-		fmt.Println(pod.Name)
-	}
+	//fmt.Println("all  pods :")
+	//for _, pod := range allPods {
+	//	fmt.Println(pod.Name)
+	//}
 	if err != nil {
 		return nil, err
 	}
@@ -147,23 +147,29 @@ func GetNvidiaDevice(client kubernetes.Interface, hostname string) ([]string, er
 	for _, pod := range allPods {
 		for i, c := range pod.Spec.Containers {
 			fmt.Println("pod name: ", pod.Name, "container name ", c.Name)
+
 			annotation := fmt.Sprintf("inspur.com/gpu-index-idx-%d", i)
-			fmt.Println("find ", annotation)
+			fmt.Println("finding: ", annotation)
+			gpuModKey := fmt.Sprintf("inspur.com/gpu-mod-idx-%d", i)
+
 			if idxStr, ok := pod.ObjectMeta.Annotations[annotation]; ok {
 				fmt.Println("1111111111111111111 found ", idxStr)
-				idxList := strings.Split(idxStr, "-")
-				for _, idx := range idxList {
-					fmt.Println("found gpu idx : ", idx)
-					if _, err := strconv.Atoi(idx); err != nil {
-						return nil, fmt.Errorf("predicate idx %s invalid for pod %s ", idxStr, pod.UID)
+				if mod, ok := pod.ObjectMeta.Annotations[gpuModKey]; ok {
+					idxList := strings.Split(idxStr, "-")
+					modList := strings.Split(mod, "-")
+					for i, idx := range idxList {
+						if modList[i] == "vcuda" {
+							continue
+						}
+						fmt.Println("found gpu idx : ", idx)
+						if _, err := strconv.Atoi(idx); err != nil {
+							return nil, fmt.Errorf("predicate idx %s invalid for pod %s ", idxStr, pod.UID)
+						}
+						fmt.Println("gpu index ", idx, " in use")
+						devMap[idx] = struct{}{}
 					}
-					//devStr := NvidiaDevicePrefix + idxStr
-					//if !IsValidGPUPath(devStr) {
-					//	return nil, fmt.Errorf("predicate idx %s invalid", devStr)
-					//}
-					fmt.Println("gpu index ", idx, " in use")
-					devMap[idx] = struct{}{}
 				}
+
 			}
 		}
 	}
