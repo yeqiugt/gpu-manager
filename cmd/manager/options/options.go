@@ -18,6 +18,7 @@
 package options
 
 import (
+	"os"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -58,6 +59,12 @@ type Options struct {
 
 // NewOptions gives a default options template.
 func NewOptions() *Options {
+	containerRuntimeEndpoint := ""
+	if _, err := os.Stat(DefaultContainerRuntimeEndpoint); os.IsNotExist(err) {
+		containerRuntimeEndpoint = "/var/run/containerd/containerd.sock"
+	} else {
+		containerRuntimeEndpoint = DefaultContainerRuntimeEndpoint
+	}
 	return &Options{
 		Driver:                   DefaultDriver,
 		QueryPort:                DefaultQueryPort,
@@ -66,7 +73,7 @@ func NewOptions() *Options {
 		VirtualManagerPath:       DefaultVirtualManagerPath,
 		AllocationCheckPeriod:    DefaultAllocationCheckPeriod,
 		CheckpointPath:           DefaultCheckpointPath,
-		ContainerRuntimeEndpoint: DefaultContainerRuntimeEndpoint,
+		ContainerRuntimeEndpoint: containerRuntimeEndpoint,
 		CgroupDriver:             DefaultCgroupDriver,
 		RequestTimeout:           time.Second * 5,
 		WaitTimeout:              time.Minute,
