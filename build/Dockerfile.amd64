@@ -10,7 +10,7 @@ RUN yum install -y rpm-build make
 RUN  yum install -y git
 
 ENV GOLANG_VERSION 1.14.3
-RUN curl -sSL https://dl.google.com/go/go${GOLANG_VERSION}.linux-arm64.tar.gz \
+RUN curl -sSL https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
     | tar -C /usr/local -xz
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH

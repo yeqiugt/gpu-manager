@@ -51,12 +51,12 @@ function plugin::generate_img() {
 
   (
     cd ${ROOT}/go/build
-    docker build \
+    docker buildx build \
         --network=host \
         --build-arg version=${version} \
         --build-arg commit=${commit} \
         --build-arg base_img=${base_img} \
-        -t "${IMAGE_FILE}:${version}" .
+        -t "${IMAGE_FILE}:${version}"  --platform=linux/arm64 -o docker .
   )
 }
 
