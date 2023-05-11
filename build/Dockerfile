@@ -1,17 +1,13 @@
 ARG base_img
-FROM nvidia/cuda:11.2.0-devel-ubuntu18.04 as build
-
-RUN apt update && apt install -y --no-install-recommends \
-  curl
-
-RUN curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | apt-key add -
-
-RUN apt install -y --no-install-recommends \
-  cmake git && \
-  rm -rf /var/lib/apt/lists/*
+FROM centos:7 as build
 
 ARG version
 ARG commit
+
+RUN yum install -y rpm-build make
+
+# default git has problems while cloning some repository
+RUN  yum install -y git
 
 ENV GOLANG_VERSION 1.14.3
 RUN curl -sSL https://dl.google.com/go/go${GOLANG_VERSION}.linux-arm64.tar.gz \
