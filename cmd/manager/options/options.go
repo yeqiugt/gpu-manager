@@ -18,6 +18,7 @@
 package options
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -60,11 +61,23 @@ type Options struct {
 // NewOptions gives a default options template.
 func NewOptions() *Options {
 	containerRuntimeEndpoint := ""
-	if _, err := os.Stat(DefaultContainerRuntimeEndpoint); os.IsNotExist(err) {
-		containerRuntimeEndpoint = "/var/run/containerd/containerd.sock"
-	} else {
-		containerRuntimeEndpoint = DefaultContainerRuntimeEndpoint
+	fmt.Println("find container runtime endpoint")
+	dockerShimEndpoint := "/var/run/dockershim.sock"
+	criEndpoint := "/var/run/cri-dockerd.sock"
+	containerdEndpoint := "/var/run/containerd/containerd.sock"
+
+	switch true {
+	case Exists(dockerShimEndpoint):
+		fmt.Println(dockerShimEndpoint, "exist")
+		containerRuntimeEndpoint = dockerShimEndpoint
+	case Exists(criEndpoint):
+		fmt.Println(criEndpoint, "exis")
+		containerdEndpoint = criEndpoint
+	case Exists(containerdEndpoint):
+		fmt.Println(containerdEndpoint, "exis")
+		containerdEndpoint = containerdEndpoint
 	}
+	fmt.Println("container runtime endpoint is : ", containerdEndpoint)
 	return &Options{
 		Driver:                   DefaultDriver,
 		QueryPort:                DefaultQueryPort,
@@ -102,4 +115,15 @@ func (opt *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&opt.RequestTimeout, "runtime-request-timeout", opt.RequestTimeout,
 		"request timeout for communicating with container runtime endpoint")
 	fs.DurationVar(&opt.WaitTimeout, "wait-timeout", opt.WaitTimeout, "wait timeout for resource server ready")
+}
+
+func Exists(path string) bool {
+	_, err := os.Stat(path) //os.Stat获取文件信息
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
 }
