@@ -72,12 +72,12 @@ func NewOptions() *Options {
 		containerRuntimeEndpoint = dockerShimEndpoint
 	case Exists(criEndpoint):
 		fmt.Println(criEndpoint, "exis")
-		containerdEndpoint = criEndpoint
+		containerRuntimeEndpoint = criEndpoint
 	case Exists(containerdEndpoint):
 		fmt.Println(containerdEndpoint, "exis")
-		containerdEndpoint = containerdEndpoint
+		containerRuntimeEndpoint = containerdEndpoint
 	}
-	fmt.Println("container runtime endpoint is : ", containerdEndpoint)
+	fmt.Println("container runtime endpoint is : ", containerRuntimeEndpoint)
 	return &Options{
 		Driver:                   DefaultDriver,
 		QueryPort:                DefaultQueryPort,
