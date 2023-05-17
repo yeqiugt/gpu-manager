@@ -14,6 +14,7 @@ RUN curl -sSL https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
     | tar -C /usr/local -xz
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+ENV GOPROXY https://goproxy.cn
 
 RUN mkdir -p /root/rpmbuild/{SPECS,SOURCES}
 
@@ -34,14 +35,13 @@ FROM $base_img
 ARG version
 ARG commit
 
-COPY --from=build /root/rpmbuild/RPMS/x86_64/gpu-manager-${version}-${commit}.el7.x86_64.rpm /tmp
 
-RUN yum install epel-release -y && \
-  yum install -y which jq
+COPY --from=build /root/rpmbuild/RPMS/x86_64/gpu-manager-${version}-${commit}.el7.x86_64.rpm /tmp
 
 # Install packages
 RUN rpm -ivh /tmp/gpu-manager-${version}-${commit}.el7.x86_64.rpm \
-	&& rm -rf /tmp/gpu-manager-${version}-${commit}.el7.x86_64.rpm
+        && rm -rf /tmp/gpu-manager-${version}-${commit}.el7.x86_64.rpm
+
 
 # kubelet
 VOLUME ["/var/lib/kubelet/device-plugins"]
