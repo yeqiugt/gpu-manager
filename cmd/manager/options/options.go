@@ -19,6 +19,7 @@ package options
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -67,13 +68,13 @@ func NewOptions() *Options {
 	containerdEndpoint := "/var/run/containerd/containerd.sock"
 
 	switch true {
-	case Exists(dockerShimEndpoint):
+	case ValideUnixSocket(dockerShimEndpoint):
 		fmt.Println(dockerShimEndpoint, "exist")
 		containerRuntimeEndpoint = dockerShimEndpoint
-	case Exists(criEndpoint):
+	case ValideUnixSocket(criEndpoint):
 		fmt.Println(criEndpoint, "exis")
 		containerRuntimeEndpoint = criEndpoint
-	case Exists(containerdEndpoint):
+	case ValideUnixSocket(containerdEndpoint):
 		fmt.Println(containerdEndpoint, "exis")
 		containerRuntimeEndpoint = containerdEndpoint
 	}
@@ -125,5 +126,15 @@ func Exists(path string) bool {
 		}
 		return false
 	}
+	return true
+}
+
+func ValideUnixSocket(path string) bool {
+	conn, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: path, Net: "unix"})
+	if err != nil {
+		fmt.Printf("连接失败：%v\n", err)
+		return false
+	}
+	defer conn.Close()
 	return true
 }
