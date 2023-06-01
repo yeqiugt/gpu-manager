@@ -1,5 +1,5 @@
 ARG base_img
-FROM centos:7 as build
+FROM nvidia/cuda:11.2.0-devel-ubi8  as build
 
 ARG version
 ARG commit
@@ -14,6 +14,8 @@ RUN curl -sSL https://dl.google.com/go/go${GOLANG_VERSION}.linux-arm64.tar.gz \
     | tar -C /usr/local -xz
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+ENV GOPROXY https://goproxy.cn
+
 
 RUN mkdir -p /root/rpmbuild/{SPECS,SOURCES}
 
@@ -34,14 +36,14 @@ FROM $base_img
 ARG version
 ARG commit
 
-COPY --from=build /root/rpmbuild/RPMS/x86_64/gpu-manager-${version}-${commit}.el8.aarch64.rpm /tmp
+COPY --from=build /root/rpmbuild/RPMS/aarch64/gpu-manager-${version}-${commit}.el8.aarch64.rpm /tmp
 
-RUN yum install epel-release -y && \
-  yum install -y which jq
+RUN curl -L -o /usr/local/bin/jq https://mirrors.tuna.tsinghua.edu.cn/github-release/stedolan/jq/releases/download/jq-1.6/jq-linux-arm64 && \
+    chmod +x /usr/local/bin/jq
 
 # Install packages
 RUN rpm -ivh /tmp/gpu-manager-${version}-${commit}.el8.aarch64.rpm \
-	&& rm -rf /tmp/gpu-manager-${version}-${commit}.el8.aarch64.rpm
+        && rm -rf /tmp/gpu-manager-${version}-${commit}.el8.aarch64.rpm
 
 # kubelet
 VOLUME ["/var/lib/kubelet/device-plugins"]
