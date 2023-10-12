@@ -1,5 +1,5 @@
 ARG base_img
-FROM nvidia/cuda:11.2.0-devel-ubi8  as build
+FROM nvidia/cuda:11.2.2-devel-ubi8  as build
 
 ARG version
 ARG commit
