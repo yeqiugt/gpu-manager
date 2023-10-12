@@ -56,7 +56,7 @@ function plugin::generate_img() {
         --build-arg version=${version} \
         --build-arg commit=${commit} \
         --build-arg base_img=${base_img} \
-        -t "${IMAGE_FILE}:${version}"  --platform=linux/arm64 --progress=plain  -o type=docker .
+        -t "${IMAGE_FILE}:${version}"  -f Dockerfile.arm  --platform=linux/arm64 --progress=plain  -o type=docker .
   )
 }
 

@@ -51,12 +51,14 @@ function plugin::generate_img() {
 
   (
     cd ${ROOT}/go/build
+    ls
     docker  build \
         --network=host \
         --build-arg version=${version} \
         --build-arg commit=${commit} \
         --build-arg base_img=${base_img} \
-        -t "${IMAGE_FILE}:${version}"  .
+        -t "${IMAGE_FILE}:${version}"\
+	-f  Dockerfile.amd64  .
   )
 }
 
